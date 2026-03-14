@@ -8,13 +8,31 @@ AI-powered customer operations platform for local service businesses such as:
 - repair services
 - real estate agencies
 
-Core capability:
+Core automation loop:
 
-Lead -> Booking -> Reminder -> Follow-up -> Review -> Reactivation
+Lead → Booking → Reminder → Follow-up → Review → Reactivation
 
-This repository uses an AI-first development workflow.
+This repository follows an **AI‑first development workflow**.  
+AI coding agents (CodeX / Cursor / Claude Code) should scaffold and implement the system based on the architecture defined below.
 
-AI agents (CodeX / Cursor / Claude Code) are expected to scaffold and implement the system based on the architecture defined below.
+---
+
+## Architecture Overview
+
+Product type:
+
+Customer Operations Platform with AI Assistance
+
+Core components:
+
+- CRM (customer management)
+- Appointment booking
+- Automated workflow engine
+- Messaging (SMS / Email)
+- Review collection
+- AI-assisted operations
+
+AI is **assistive only**, not autonomous.
 
 ---
 
@@ -33,22 +51,22 @@ AI agents (CodeX / Cursor / Claude Code) are expected to scaffold and implement 
 - PostgreSQL
 - Prisma ORM
 
-### Async / Queue
+### Messaging
+- Twilio (SMS)
+- Resend (Email)
+
+### Async Jobs (future)
 - Redis
 - BullMQ
 
-### Messaging
-- Twilio (SMS / WhatsApp)
-- Resend (Email)
-
 ### AI
-- Provider abstraction layer
-- OpenAI / Anthropic
+- OpenAI (default)
+- Anthropic (optional)
 
 ### Deployment
 - Docker
 
-### Architecture
+### Architecture Pattern
 - Modular Monolith
 - Monorepo
 
@@ -56,279 +74,232 @@ AI agents (CodeX / Cursor / Claude Code) are expected to scaffold and implement 
 
 ## Repository Structure
 
-```text
 apps/
-  web/          # Next.js dashboard
-  api/          # NestJS backend
+  web/        # Next.js dashboard
+  api/        # NestJS backend
 
 packages/
-  shared/       # shared types / utils
+  shared/     # shared types / utilities
 
 infra/
   docker/
 
 docs/
-Backend Modules
 
-The backend MUST use modular architecture.
+---
+
+## Backend Modules
+
+The backend MUST follow modular architecture.
 
 Modules:
 
-auth
+- auth
+- workspace
+- customers
+- appointments
+- messaging
+- workflows
+- reviews
+- ai
+- dashboard
 
-workspace
+Rules:
 
-customers
+- Modules own their business logic
+- No cross-module database access
+- Timeline is implemented as a query layer, not a module
 
-appointments
+---
 
-messaging
-
-workflows
-
-reviews
-
-ai
-
-dashboard
-
-MVP Database Tables
-
-The MVP should stay minimal.
+## MVP Database Tables
 
 Core tables:
 
-workspace
+- workspace
+- user
+- customer
+- appointment
+- message
+- workflow_rule
+- task
+- review
 
-user
+Design rules:
 
-customer
+- Leads are NOT a separate table
+- Use `customer.status = new_lead`
 
-appointment
+---
 
-message
+## Customer Status
 
-workflow_rule
+new_lead  
+contacted  
+booked  
+active  
+inactive  
+lost  
 
-task
+---
 
-review
+## Workflow Triggers
 
-Notes:
+lead_created  
+lead_not_contacted_24h  
+appointment_booked  
+appointment_reminder  
+appointment_completed  
+customer_inactive_30d  
 
-Leads should NOT be a separate table
+---
 
-Use customer.status = "new_lead"
+## Workflow Actions
 
-Customer Status
-new_lead
-contacted
-booked
-active
-inactive
-lost
-Workflow Triggers
-lead_created
-lead_not_contacted_24h
-appointment_booked
-appointment_reminder
-appointment_completed
-customer_inactive_30d
-Workflow Actions
-send_message
-create_task
-update_customer_status
-assign_owner
-request_review
-Messaging Channels (MVP)
-SMS
-Email
+send_message  
+create_task  
+update_customer_status  
+assign_owner  
+request_review  
 
-WhatsApp will be added later.
+---
 
-AI Assist (MVP)
+## Messaging Channels (MVP)
 
-AI should only assist operations.
+SMS  
+Email  
+
+Future:
+
+- WhatsApp
+
+---
+
+## AI Assist (MVP)
+
+AI assists human operators.
 
 Functions:
 
-lead intent classification
+- lead intent classification
+- message rewrite
+- customer summary
+- next best action suggestion
 
-message rewrite
+Rules:
 
-customer summary
+- AI must never automatically send messages
+- AI must not control workflows
+- AI output must require human confirmation
 
-next best action
+---
 
-AI must not control workflows.
+## Development Rules
 
-Development Rules
+AI coding agents must follow these rules:
 
-AI agents must follow these rules:
+1. Do NOT introduce microservices
+2. Keep modular monolith architecture
+3. Do NOT add unnecessary database tables
+4. Do NOT build complex analytics systems
+5. Do NOT implement chatbot UI
+6. Focus on CRM + booking + workflow automation
+7. Prefer scaffold‑first, business‑logic‑later
 
-Do not introduce microservices
+---
 
-Keep the architecture modular monolith
+## Development Phases
 
-Do not add unnecessary tables
+Phase 1  
+Auth  
+Workspace  
+Customers  
 
-Do not implement complex analytics
+Phase 2  
+Appointments  
+Messaging  
 
-Do not implement chatbot UI
+Phase 3  
+Workflow Engine  
 
-Focus on CRM + booking + workflow automation
+Phase 4  
+Reviews  
 
-Keep the MVP practical and lightweight
+Phase 5  
+Dashboard  
 
-Prefer scaffold-first, business-logic-later
+Phase 6  
+AI Assist  
 
-Development Phases
-Phase 1
+---
 
-Auth
+## Initial Build Goal
 
-Workspace
+Generate a **clean runnable project skeleton** including:
 
-Customers
+- pnpm workspace
+- Next.js frontend
+- NestJS backend
+- Prisma configuration
+- Docker compose
+- environment variable template
+- backend module skeletons
+- frontend page skeletons
 
-Phase 2
+Do NOT implement full business logic yet.
 
-Appointments
+---
 
-Messaging
+## Non‑Goals for MVP
 
-Phase 3
+Out of scope for MVP:
 
-Workflow Engine
+- chatbot‑first product
+- omnichannel inbox
+- campaign engine
+- advanced analytics platform
+- billing / invoicing
+- microservices split
+- complex RBAC systems
 
-Phase 4
+---
 
-Reviews
+## Product Value
 
-Phase 5
+This platform helps businesses:
 
-Dashboard
+- never miss a lead
+- never miss a booking
+- never miss a reminder
+- never miss a follow‑up
+- collect more reviews
+- increase repeat customers
 
-Phase 6
+---
 
-AI Assist
+## Internationalization
 
-AI Agent Instructions
+Supported languages (v1):
 
-If you are an AI coding agent:
-
-Scaffold the monorepo structure
-
-Initialize NestJS backend
-
-Initialize Next.js frontend
-
-Setup pnpm workspace
-
-Setup Prisma schema
-
-Implement module skeletons
-
-Do not implement full business logic yet
-
-Initial Build Goal
-
-The first goal is to generate a clean, runnable project skeleton that includes:
-
-monorepo workspace setup
-
-frontend app scaffold
-
-backend app scaffold
-
-Prisma configuration
-
-Docker configuration
-
-environment variable template
-
-backend module skeletons
-
-frontend page skeletons
-
-Do not overbuild the system in the first pass.
-
-Non-Goals for MVP
-
-The following items are explicitly out of scope for MVP:
-
-chatbot-first product design
-
-omnichannel inbox
-
-advanced analytics platform
-
-campaign engine
-
-microservices split
-
-billing / invoicing
-
-deep industry-specific logic
-
-full RBAC complexity
-
-custom workflow scripting language
-
-Product Positioning
-
-This product is NOT primarily a chatbot.
-
-It is a workflow-driven customer operations platform with AI assistance.
-
-Primary value:
-
-never miss a lead
-
-never miss a booking
-
-never miss a reminder
-
-never miss a follow-up
-
-collect more reviews
-
-improve repeat bookings
-
-Internationalization
-
-The product must support multilingual operation from day one.
-
-Initial languages:
-
-English
-
-Chinese
+- English
+- Chinese
 
 Requirements:
 
-UI text must be i18n-ready
+- UI must support i18n
+- customer preferred language stored
+- templates support multiple languages
+- date/time/phone/currency internationalized
 
-customer preferred language should be stored
+---
 
-templates must support language-specific variants
+## Future Expansion
 
-date/time/phone/currency design should be international-friendly
+Possible future features:
 
-Future Expansion (Not MVP)
-
-Possible future expansions include:
-
-WhatsApp messaging
-
-service catalog table
-
-multi-location management
-
-staff performance analytics
-
-Redis/BullMQ job scaling
-
-AI-generated workflow suggestions
-
-more provider integrations
+- WhatsApp messaging
+- service catalog table
+- multi‑location management
+- staff performance analytics
+- Redis/BullMQ job processing
+- AI workflow suggestions

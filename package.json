@@ -1,0 +1,26 @@
+{
+  "name": "local-business-ai",
+  "private": true,
+  "packageManager": "pnpm@10.6.3",
+  "dependencies": {
+    "@prisma/client": "^6.7.0"
+  },
+  "scripts": {
+    "dev": "pnpm -r --parallel --filter @local-business-ai/web --filter @local-business-ai/api dev",
+    "dev:web": "pnpm --filter @local-business-ai/web dev",
+    "dev:api": "pnpm --filter @local-business-ai/api dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "lint": "pnpm -r --if-present lint",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate:dev": "prisma migrate dev",
+    "db:seed": "prisma db seed",
+    "db:setup": "prisma migrate deploy && prisma db seed",
+    "db:up": "docker compose -f infra/docker/docker-compose.yml up -d --wait",
+    "db:down": "docker compose -f infra/docker/docker-compose.yml down"
+  },
+  "devDependencies": {
+    "prisma": "^6.7.0",
+    "typescript": "^5.6.3"
+  }
+}
