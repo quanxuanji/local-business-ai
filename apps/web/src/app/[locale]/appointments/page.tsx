@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { ApiErrorBanner } from "../../../components/api-error-banner";
 import { AppShell } from "../../../components/app-shell";
 import { AppointmentsListView } from "../../../features/appointments/appointments-list";
 import { getAppointmentsSnapshot } from "../../../features/appointments/data";
@@ -31,6 +32,8 @@ export default async function AppointmentsPage({
           : "View and manage all appointment records."
       }
     >
+      {snapshot.apiError && <ApiErrorBanner locale={locale} />}
+
       <div className="flex justify-end">
         <Link
           href={`/${locale}/appointments/new`}

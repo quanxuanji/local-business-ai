@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { ApiErrorBanner } from "../../../components/api-error-banner";
 import { AppShell } from "../../../components/app-shell";
 import { getDashboardSnapshot } from "../../../features/dashboard/data";
 import { DashboardWidgets } from "../../../features/dashboard/dashboard-widgets";
@@ -46,6 +47,8 @@ export default async function DashboardPage({
           : "Overview of customers, appointments, messaging and review metrics."
       }
     >
+      {snapshot.apiError && <ApiErrorBanner locale={locale} />}
+
       <div className="flex flex-wrap gap-3">
         {quickActions.map((a) => (
           <Link

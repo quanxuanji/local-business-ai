@@ -57,6 +57,7 @@ export type DashboardSnapshot = {
   stages: DashboardStageItem[];
   insights: DashboardInsight[];
   dependencies: DashboardDependency[];
+  apiError?: boolean;
 };
 
 const stageLabels: Record<Locale, Record<CustomerStage, string>> = {
@@ -122,7 +123,9 @@ export async function getDashboardSnapshot(
 
     return transformApiData(locale, summary, customerList);
   } catch {
-    return getPlaceholderSnapshot(locale);
+    const placeholder = getPlaceholderSnapshot(locale);
+    placeholder.apiError = true;
+    return placeholder;
   }
 }
 

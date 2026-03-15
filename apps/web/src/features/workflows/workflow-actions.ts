@@ -43,6 +43,43 @@ export async function createWorkflowRuleAction(
   return { success: true };
 }
 
+export async function updateWorkflowRuleAction(
+  locale: string,
+  ruleId: string,
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const session = await getSession();
+  if (!session) return { error: "Not authenticated." };
+
+  const body: Record<string, unknown> = {};
+  const name = formData.get("name");
+  const trigger = formData.get("trigger");
+  const action = formData.get("action");
+  if (name) body.name = name;
+  if (trigger) body.trigger = trigger;
+  if (action) body.action = action;
+
+  try {
+    await apiFetch<WorkflowRuleResponse>(
+      `/workspaces/${session.workspaceId}/workflow-rules/${ruleId}`,
+      { method: "PATCH", body, token: session.token },
+    );
+  } catch (e) {
+    if (e instanceof ApiError) {
+      const msg =
+        typeof e.body === "object" && e.body && "message" in e.body
+          ? String((e.body as { message: unknown }).message)
+          : e.statusText;
+      return { error: msg };
+    }
+    return { error: "Failed to update workflow rule." };
+  }
+
+  revalidatePath(`/${locale}/workflows`);
+  return { success: true };
+}
+
 export async function toggleWorkflowRuleAction(
   locale: string,
   ruleId: string,

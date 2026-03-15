@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import { AppShell } from "../../../components/app-shell";
 import { FeaturePanel } from "../../../components/feature-panel";
+import { LoginRequiredBanner } from "../../../components/login-required-banner";
 import { apiFetch } from "../../../lib/api-client";
 import type { WorkflowRuleResponse } from "../../../lib/api-types";
 import { getLocaleFromValue } from "../../../lib/i18n";
@@ -46,6 +47,8 @@ export default async function WorkflowsPage({
           : "Create and manage automation rules with triggers and actions."
       }
     >
+      {!session && <LoginRequiredBanner locale={locale} />}
+
       <FeaturePanel
         title={locale === "zh" ? "新建规则" : "Create rule"}
         description={

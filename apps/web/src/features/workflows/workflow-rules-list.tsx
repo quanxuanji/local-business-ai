@@ -5,6 +5,7 @@ import type { WorkflowRuleResponse } from "../../lib/api-types";
 import {
   toggleWorkflowRuleAction,
   deleteWorkflowRuleAction,
+  updateWorkflowRuleAction,
 } from "./workflow-actions";
 import { WorkflowRuleActionsButtons } from "./workflow-rule-actions-buttons";
 
@@ -106,8 +107,14 @@ export function WorkflowRulesList({
                   locale={locale}
                   ruleId={rule.id}
                   isActive={rule.isActive}
+                  defaultValues={{
+                    name: rule.name,
+                    trigger: rule.trigger,
+                    action: rule.action,
+                  }}
                   onToggle={toggleWorkflowRuleAction.bind(null, locale)}
                   onDelete={deleteWorkflowRuleAction.bind(null, locale)}
+                  updateAction={updateWorkflowRuleAction.bind(null, locale, rule.id)}
                 />
               </div>
             </article>

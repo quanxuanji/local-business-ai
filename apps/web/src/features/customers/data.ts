@@ -42,6 +42,7 @@ export type CustomerListSnapshot = {
   customers: CustomerListItem[];
   ownerLoads: OwnerLoad[];
   dependencies: string[];
+  apiError?: boolean;
 };
 
 export type CustomerTimelineItem = {
@@ -113,7 +114,9 @@ export async function getCustomersSnapshot(
 
     return transformCustomerList(locale, response);
   } catch {
-    return getPlaceholderCustomersSnapshot(locale);
+    const placeholder = getPlaceholderCustomersSnapshot(locale);
+    placeholder.apiError = true;
+    return placeholder;
   }
 }
 

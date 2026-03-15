@@ -33,6 +33,7 @@ export type AppointmentsSnapshot = {
   metrics: AppointmentListMetric[];
   appointments: AppointmentListItem[];
   dependencies: string[];
+  apiError?: boolean;
 };
 
 const statusMap: Record<string, AppointmentStatus> = {
@@ -60,7 +61,9 @@ export async function getAppointmentsSnapshot(
 
     return transformAppointments(locale, appointments);
   } catch {
-    return getPlaceholderSnapshot(locale);
+    const placeholder = getPlaceholderSnapshot(locale);
+    placeholder.apiError = true;
+    return placeholder;
   }
 }
 

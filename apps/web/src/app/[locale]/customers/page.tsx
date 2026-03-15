@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { ApiErrorBanner } from "../../../components/api-error-banner";
 import { AppShell } from "../../../components/app-shell";
 import { CustomersListView } from "../../../features/customers/customer-list";
 import { getCustomersSnapshot } from "../../../features/customers/data";
@@ -31,6 +32,8 @@ export default async function CustomersPage({
           : "Manage leads and customers, view status and owner assignments."
       }
     >
+      {snapshot.apiError && <ApiErrorBanner locale={locale} />}
+
       <div className="flex justify-end">
         <Link
           href={`/${locale}/customers/new`}

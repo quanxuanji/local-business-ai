@@ -5,6 +5,8 @@ import { MetricCard } from "../../components/metric-card";
 import { StatusBadge } from "../../components/status-badge";
 import type { Locale } from "../../lib/i18n";
 import type { ReviewResponse } from "../../lib/api-types";
+import { submitReviewAction } from "./review-actions";
+import { SubmitReviewForm } from "./submit-review-form";
 
 type ReviewsListViewProps = {
   locale: Locale;
@@ -104,6 +106,13 @@ export function ReviewsListView({ locale, reviews }: ReviewsListViewProps) {
                     <p className="text-sm text-slate">{review.comment}</p>
                   )}
                 </div>
+                {review.status === "REQUESTED" && (
+                  <SubmitReviewForm
+                    locale={locale}
+                    reviewId={review.id}
+                    onSubmit={submitReviewAction.bind(null, locale)}
+                  />
+                )}
               </article>
             ))}
           </div>

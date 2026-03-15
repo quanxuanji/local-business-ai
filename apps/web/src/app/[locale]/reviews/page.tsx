@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { AppShell } from "../../../components/app-shell";
+import { LoginRequiredBanner } from "../../../components/login-required-banner";
 import { apiFetch } from "../../../lib/api-client";
 import type { ReviewResponse } from "../../../lib/api-types";
 import { getLocaleFromValue } from "../../../lib/i18n";
@@ -41,6 +42,7 @@ export default async function ReviewsPage({
           : "View and manage customer reviews, track review request status."
       }
     >
+      {!session && <LoginRequiredBanner locale={locale} />}
       <ReviewsListView locale={locale} reviews={reviews} />
     </AppShell>
   );
