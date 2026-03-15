@@ -2,13 +2,17 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import type { AiProvider, AiProviderDescriptor } from "@local-business-ai/ai";
 
 import { MockAiProvider } from "./providers/mock-ai.provider";
+import { OpenAiProvider } from "./providers/openai.provider";
 
 @Injectable()
 export class AiProviderRegistry {
   private readonly providers: AiProvider[];
 
-  constructor(private readonly mockAiProvider: MockAiProvider) {
-    this.providers = [mockAiProvider];
+  constructor(
+    private readonly mockAiProvider: MockAiProvider,
+    private readonly openAiProvider: OpenAiProvider,
+  ) {
+    this.providers = [openAiProvider, mockAiProvider];
   }
 
   list(): AiProviderDescriptor[] {

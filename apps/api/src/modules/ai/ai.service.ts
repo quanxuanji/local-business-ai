@@ -8,6 +8,12 @@ import type {
 import type { ModuleOverviewDto } from "../../common/dto/module-overview.dto";
 import { AiProviderRegistry } from "./ai-provider.registry";
 import { PromptTemplateRegistry } from "./prompt-templates/prompt-template.registry";
+import type {
+  CustomerSummaryDto,
+  LeadIntentDto,
+  MessageRewriteDto,
+  NextActionDto,
+} from "./dto/customer-summary.dto";
 
 @Injectable()
 export class AiService {
@@ -19,15 +25,15 @@ export class AiService {
   getOverview(): ModuleOverviewDto {
     return {
       module: "ai",
-      phase: 1,
+      phase: 2,
       summary:
-        "Thin AI foundation with a provider registry, prompt templates, and mock-backed generation for safe early workflow integration.",
+        "AI foundation with OpenAI integration, customer summary, message rewrite, next-action suggestion, and lead intent classification.",
       nextSteps: [
-        "Add real provider adapters behind the existing registry interface",
         "Keep human review in front of any customer-facing delivery path",
+        "Add fine-tuned prompts based on business domain",
       ],
       futureExtensions: [
-        "OpenAI and Anthropic adapters can plug in without changing workflow code",
+        "Anthropic adapter can plug in without changing workflow code",
       ],
     };
   }
@@ -87,6 +93,81 @@ export class AiService {
       output: result.text,
       usage: result.usage,
     };
+  }
+
+  async customerSummary(
+    dto: CustomerSummaryDto,
+  ): Promise<{ summary: string; providerId: string }> {
+    const provider = this.aiProviderRegistry.get("openai");
+    const result = await provider.generateText({
+      systemPrompt:
+        "You are a helpful CRM assistant. Generate a concise 2-3 sentence customer summary for a local business operator. Focus on actionable insights.",
+      userPrompt: `Customer: ${dto.customerName}\nStatus: ${dto.status ?? "unknown"}\nNotes: ${dto.notes ?? "none"}\nBusiness: ${dto.businessName ?? "Local Business"}\n\nGenerate a brief customer profile summary highlighting key characteristics and engagement history.`,
+      temperature: 0.5,
+      maxTokens: 200,
+    });
+
+    return { summary: result.text, providerId: result.providerId };
+  }
+
+  async messageRewrite(
+    dto: MessageRewriteDto,
+  ): Promise<{ rewritten: string; providerId: string }> {
+    const provider = this.aiProviderRegistry.get("openai");
+    const result = await provider.generateText({
+      systemPrompt: `You are a communication assistant for a local business. Rewrite the message in a ${dto.tone ?? "professional and friendly"} tone. Keep it concise and suitable for ${dto.channel ?? "SMS"}.`,
+      userPrompt: `Original message:\n"${dto.originalMessage}"\n\nRewrite this message to be more effective for customer communication.`,
+      temperature: 0.6,
+      maxTokens: 300,
+    });
+
+    return { rewritten: result.text, providerId: result.providerId };
+  }
+
+  async nextAction(
+    dto: NextActionDto,
+  ): Promise<{ suggestion: string; providerId: string }> {
+    const provider = this.aiProviderRegistry.get("openai");
+    const result = await provider.generateText({
+      systemPrompt:
+        "You are a CRM strategy assistant for local businesses. Suggest the single most impactful next action for this customer. Be specific and actionable. Output only the recommendation in 1-2 sentences.",
+      userPrompt: `Customer: ${dto.customerName}\nStatus: ${dto.status ?? "unknown"}\nContext: ${dto.context ?? "No additional context"}\n\nWhat should the operator do next with this customer?`,
+      temperature: 0.5,
+      maxTokens: 150,
+    });
+
+    return { suggestion: result.text, providerId: result.providerId };
+  }
+
+  async leadIntent(
+    dto: LeadIntentDto,
+  ): Promise<{ intent: string; confidence: string; providerId: string }> {
+    const provider = this.aiProviderRegistry.get("openai");
+    const result = await provider.generateText({
+      systemPrompt:
+        'You are a lead qualification assistant. Classify the lead intent into one of: HIGH_INTENT (ready to book), MEDIUM_INTENT (interested, needs nurturing), LOW_INTENT (browsing, not ready), or UNKNOWN. Also provide a confidence level: HIGH, MEDIUM, or LOW. Output JSON format: {"intent": "...", "confidence": "..."}',
+      userPrompt: `Lead: ${dto.customerName}\nMessage: "${dto.messageContent}"\n\nClassify the intent.`,
+      temperature: 0.3,
+      maxTokens: 100,
+    });
+
+    try {
+      const parsed = JSON.parse(result.text) as {
+        intent: string;
+        confidence: string;
+      };
+      return {
+        intent: parsed.intent ?? "UNKNOWN",
+        confidence: parsed.confidence ?? "LOW",
+        providerId: result.providerId,
+      };
+    } catch {
+      return {
+        intent: "UNKNOWN",
+        confidence: "LOW",
+        providerId: result.providerId,
+      };
+    }
   }
 
   private toPromptTemplateVariables(

@@ -1,4 +1,11 @@
+import { apiFetch } from "../../lib/api-client";
+import type {
+  AppointmentResponse,
+  CustomerListResponse,
+  CustomerResponse,
+} from "../../lib/api-types";
 import type { Locale } from "../../lib/i18n";
+import { getSession } from "../../lib/session";
 import {
   appointmentRecords,
   customerRecords,
@@ -67,11 +74,226 @@ export type CustomerDetail = {
   dependencies: string[];
 };
 
+const statusToStage: Record<string, CustomerStage> = {
+  NEW_LEAD: "new_lead",
+  CONTACTED: "contacted",
+  BOOKED: "booked",
+  ACTIVE: "active",
+  INACTIVE: "inactive",
+  LOST: "inactive",
+};
+
+const langLabel: Record<string, string> = {
+  EN: "English",
+  ZH: "Chinese",
+};
+
+const appointmentStatusMap: Record<string, "pending" | "confirmed" | "completed"> = {
+  SCHEDULED: "pending",
+  CONFIRMED: "confirmed",
+  COMPLETED: "completed",
+  CANCELED: "completed",
+  NO_SHOW: "completed",
+};
+
 export async function getCustomersSnapshot(
   locale: Locale,
 ): Promise<CustomerListSnapshot> {
-  // API integration point: swap this out for the customer list query once the
-  // CRM read model and filtering endpoints are available from the backend.
+  const session = await getSession();
+
+  if (!session) {
+    return getPlaceholderCustomersSnapshot(locale);
+  }
+
+  try {
+    const response = await apiFetch<CustomerListResponse>(
+      `/workspaces/${session.workspaceId}/customers`,
+      { token: session.token, params: { limit: 50 } },
+    );
+
+    return transformCustomerList(locale, response);
+  } catch {
+    return getPlaceholderCustomersSnapshot(locale);
+  }
+}
+
+function transformCustomerList(
+  locale: Locale,
+  response: CustomerListResponse,
+): CustomerListSnapshot {
+  const counts = response.summary.countsByStatus;
+
+  const metrics: CustomerListMetric[] = [
+    {
+      label: locale === "zh" ? "客户总数" : "Customers tracked",
+      value: String(response.summary.total),
+      helper:
+        locale === "zh"
+          ? "包含新线索、已预约客户和沉默客户。"
+          : "Includes leads, booked customers, and lapsed accounts.",
+    },
+    {
+      label: locale === "zh" ? "需要跟进" : "Needs follow-up",
+      value: String((counts["NEW_LEAD"] ?? 0) + (counts["CONTACTED"] ?? 0)),
+      helper:
+        locale === "zh"
+          ? "建议今天继续推进的潜在客户。"
+          : "Leads that still need an operator touch today.",
+    },
+    {
+      label: locale === "zh" ? "已预约" : "Booked",
+      value: String(counts["BOOKED"] ?? 0),
+      helper:
+        locale === "zh"
+          ? "已经进入预约阶段、等待到店或完成。"
+          : "Customers already moving through the booking flow.",
+    },
+    {
+      label: locale === "zh" ? "活跃客户" : "Active clients",
+      value: String(counts["ACTIVE"] ?? 0),
+      helper:
+        locale === "zh"
+          ? "适合做复购和套餐升级的人群。"
+          : "Best candidates for package follow-up and retention.",
+    },
+  ];
+
+  const ownerMap = new Map<string, number>();
+  for (const c of response.items) {
+    const ownerName = c.owner?.name ?? (locale === "zh" ? "未分配" : "Unassigned");
+    ownerMap.set(ownerName, (ownerMap.get(ownerName) ?? 0) + 1);
+  }
+
+  const customers: CustomerListItem[] = response.items.map((c) => ({
+    id: c.id,
+    name: c.fullName,
+    stage: statusToStage[c.status] ?? "inactive",
+    ownerName: c.owner?.name ?? (locale === "zh" ? "未分配" : "Unassigned"),
+    preferredLanguage: langLabel[c.preferredLanguage] ?? c.preferredLanguage,
+    source: c.source ?? "",
+    nextAppointmentLabel:
+      c.appointmentsCount > 0
+        ? locale === "zh"
+          ? `${c.appointmentsCount} 个预约`
+          : `${c.appointmentsCount} appointment(s)`
+        : locale === "zh"
+          ? "暂无预约"
+          : "No appointment scheduled",
+    lastActivityAt: c.updatedAt,
+    lastMessage: c.notes || "",
+    tags: [c.status.replace("_", " ")],
+  }));
+
+  return {
+    metrics,
+    customers,
+    ownerLoads: Array.from(ownerMap).map(([ownerName, customerCount]) => ({
+      ownerName,
+      customerCount,
+    })),
+    dependencies: [],
+  };
+}
+
+export async function getCustomerDetail(
+  customerId: string,
+  locale: Locale,
+): Promise<CustomerDetail | null> {
+  const session = await getSession();
+
+  if (!session) {
+    return getPlaceholderCustomerDetail(customerId, locale);
+  }
+
+  try {
+    const [customer, appointments] = await Promise.all([
+      apiFetch<CustomerResponse>(
+        `/workspaces/${session.workspaceId}/customers/${customerId}`,
+        { token: session.token },
+      ),
+      apiFetch<AppointmentResponse[]>(
+        `/workspaces/${session.workspaceId}/appointments`,
+        { token: session.token, params: { customerId, limit: 20 } },
+      ),
+    ]);
+
+    return transformCustomerDetail(locale, customer, appointments);
+  } catch {
+    return null;
+  }
+}
+
+function transformCustomerDetail(
+  locale: Locale,
+  customer: CustomerResponse,
+  appointments: AppointmentResponse[],
+): CustomerDetail {
+  const stage = statusToStage[customer.status] ?? "inactive";
+
+  const profileItems = [
+    {
+      label: locale === "zh" ? "负责人" : "Owner",
+      value: customer.owner?.name ?? (locale === "zh" ? "未分配" : "Unassigned"),
+    },
+    {
+      label: locale === "zh" ? "偏好语言" : "Preferred language",
+      value: langLabel[customer.preferredLanguage] ?? customer.preferredLanguage,
+    },
+    {
+      label: locale === "zh" ? "来源" : "Source",
+      value: customer.source ?? "-",
+    },
+    {
+      label: locale === "zh" ? "电话" : "Phone",
+      value: customer.phone ?? "-",
+    },
+    {
+      label: locale === "zh" ? "邮箱" : "Email",
+      value: customer.email ?? "-",
+    },
+    {
+      label: locale === "zh" ? "状态" : "Status",
+      value: customer.status.replace("_", " "),
+    },
+  ];
+
+  const mappedAppointments: CustomerAppointmentItem[] = appointments.map((a) => ({
+    id: a.id,
+    service: a.serviceName ?? (locale === "zh" ? "未命名服务" : "Unnamed service"),
+    startsAt: a.startsAt,
+    status: appointmentStatusMap[a.status] ?? "pending",
+    staffName: "-",
+    note: a.notes ?? "",
+  }));
+
+  const timeline: CustomerTimelineItem[] = appointments.map((a) => ({
+    id: `appt-${a.id}`,
+    happenedAt: a.startsAt,
+    title: a.serviceName ?? (locale === "zh" ? "预约" : "Appointment"),
+    detail: `${a.status} · ${a.notes ?? ""}`.trim(),
+    kind: "appointment" as const,
+  }));
+
+  return {
+    id: customer.id,
+    name: customer.fullName,
+    stage,
+    summary: customer.notes || (locale === "zh" ? "暂无备注。" : "No notes yet."),
+    recommendedAction:
+      locale === "zh"
+        ? "后续由 AI 助手提供建议。"
+        : "AI-assisted suggestions will appear here later.",
+    tags: [customer.status.replace("_", " ")],
+    profileItems,
+    appointments: mappedAppointments,
+    timeline: timeline.sort(
+      (a, b) => new Date(b.happenedAt).getTime() - new Date(a.happenedAt).getTime(),
+    ),
+    dependencies: [],
+  };
+}
+
+function getPlaceholderCustomersSnapshot(locale: Locale): CustomerListSnapshot {
   const ownerLoads = Array.from(
     customerRecords.reduce<Map<string, number>>((accumulator, customer) => {
       const currentCount = accumulator.get(customer.ownerName) ?? 0;
@@ -155,21 +377,16 @@ export async function getCustomersSnapshot(
     ownerLoads,
     dependencies: [
       locale === "zh"
-        ? "客户列表最终需要真实筛选、分页和 workspace 隔离。"
-        : "Customer list still needs real filters, pagination, and workspace isolation.",
-      locale === "zh"
-        ? "客户阶段、负责人和最近触达时间应来自 CRM 查询接口。"
-        : "Lifecycle stage, owner, and recent touch data should come from CRM queries.",
+        ? "当前显示占位数据。请登录以加载真实 CRM 数据。"
+        : "Showing placeholder data. Sign in to load real CRM data.",
     ],
   };
 }
 
-export async function getCustomerDetail(
+function getPlaceholderCustomerDetail(
   customerId: string,
   locale: Locale,
-): Promise<CustomerDetail | null> {
-  // API integration point: replace this lookup with the customer detail query
-  // once the profile, appointment, and timeline read models are wired up.
+): CustomerDetail | null {
   const customer = customerRecords.find((record) => record.id === customerId);
 
   if (!customer) {
@@ -213,11 +430,8 @@ export async function getCustomerDetail(
       .sort((left, right) => right.happenedAt.localeCompare(left.happenedAt)),
     dependencies: [
       locale === "zh"
-        ? "客户详情后续应拼接真实消息、预约和评论时间线。"
-        : "Customer detail should eventually compose real messaging, appointment, and review timeline data.",
-      locale === "zh"
-        ? "AI 摘要和下一步建议目前仍是安全占位内容。"
-        : "AI summary and next-best action are still placeholder-safe until the service exists.",
+        ? "当前显示占位数据。请登录以加载真实数据。"
+        : "Showing placeholder data. Sign in to load real data.",
     ],
   };
 }

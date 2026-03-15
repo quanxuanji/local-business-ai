@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { AppShell } from "../../../components/app-shell";
@@ -26,10 +27,19 @@ export default async function AppointmentsPage({
       title={locale === "zh" ? "预约列表" : "Appointments"}
       description={
         locale === "zh"
-          ? "当前页面聚焦预约队列、提醒准备情况和后端接入点，不对未完成的预订接口产生硬依赖。"
-          : "This page focuses on queue visibility, reminder readiness, and clear backend seams without coupling to unfinished booking APIs."
+          ? "查看和管理所有预约记录。"
+          : "View and manage all appointment records."
       }
     >
+      <div className="flex justify-end">
+        <Link
+          href={`/${locale}/appointments/new`}
+          className="inline-flex rounded-xl bg-ink px-5 py-3 text-sm font-semibold text-white hover:bg-ink/90"
+        >
+          {locale === "zh" ? "+ 新建预约" : "+ New appointment"}
+        </Link>
+      </div>
+
       <AppointmentsListView locale={locale} snapshot={snapshot} />
     </AppShell>
   );

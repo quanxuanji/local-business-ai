@@ -1,4 +1,10 @@
+import { apiFetch } from "../../lib/api-client";
+import type {
+  CustomerListResponse,
+  DashboardSummaryResponse,
+} from "../../lib/api-types";
 import type { Locale } from "../../lib/i18n";
+import { getSession } from "../../lib/session";
 import {
   appointmentRecords,
   customerRecords,
@@ -74,22 +80,167 @@ const copy = {
   en: {
     leadsHelper: "Customers waiting on a first or second manual touch.",
     appointmentsHelper: "Upcoming bookings across the next 72 hours.",
-    remindersHelper: "Reminder drafts ready for operator approval.",
-    followUpsHelper: "Accounts with a recommended next step today.",
+    todayHelper: "Appointments scheduled for today.",
+    activeHelper: "Active clients suitable for retention and upsell.",
   },
   zh: {
     leadsHelper: "等待首次或二次人工跟进的客户。",
-    appointmentsHelper: "未来 72 小时内的预约数量。",
-    remindersHelper: "已经准备好、等待人工确认的提醒。",
-    followUpsHelper: "今天建议继续推进的客户数。",
+    appointmentsHelper: "未来的预约数量。",
+    todayHelper: "今天安排的预约数量。",
+    activeHelper: "适合做复购和套餐升级的活跃客户。",
   },
+};
+
+const statusToStage: Record<string, CustomerStage> = {
+  NEW_LEAD: "new_lead",
+  CONTACTED: "contacted",
+  BOOKED: "booked",
+  ACTIVE: "active",
+  INACTIVE: "inactive",
 };
 
 export async function getDashboardSnapshot(
   locale: Locale,
 ): Promise<DashboardSnapshot> {
-  // API integration point: replace these synchronous placeholder records with
-  // a workspace dashboard read model once the web app can call CRM endpoints.
+  const session = await getSession();
+
+  if (!session) {
+    return getPlaceholderSnapshot(locale);
+  }
+
+  try {
+    const [summary, customerList] = await Promise.all([
+      apiFetch<DashboardSummaryResponse>(
+        `/workspaces/${session.workspaceId}/dashboard/summary`,
+        { token: session.token },
+      ),
+      apiFetch<CustomerListResponse>(
+        `/workspaces/${session.workspaceId}/customers`,
+        { token: session.token, params: { limit: 5 } },
+      ),
+    ]);
+
+    return transformApiData(locale, summary, customerList);
+  } catch {
+    return getPlaceholderSnapshot(locale);
+  }
+}
+
+function transformApiData(
+  locale: Locale,
+  summary: DashboardSummaryResponse,
+  customerList: CustomerListResponse,
+): DashboardSnapshot {
+  const metrics: DashboardMetric[] = [
+    {
+      label: locale === "zh" ? "待推进线索" : "Pipeline leads",
+      value: String(summary.customers.newLeads),
+      helper: copy[locale].leadsHelper,
+    },
+    {
+      label: locale === "zh" ? "近期预约" : "Upcoming appointments",
+      value: String(summary.appointments.upcoming),
+      helper: copy[locale].appointmentsHelper,
+    },
+    {
+      label: locale === "zh" ? "今日预约" : "Today's appointments",
+      value: String(summary.appointments.today),
+      helper: copy[locale].todayHelper,
+    },
+    {
+      label: locale === "zh" ? "活跃客户" : "Active clients",
+      value: String(summary.customers.active),
+      helper: copy[locale].activeHelper,
+    },
+    {
+      label: locale === "zh" ? "已发消息" : "Messages sent",
+      value: String(summary.messaging?.sent ?? 0),
+      helper:
+        locale === "zh"
+          ? "已成功发送的 SMS/Email 消息数。"
+          : "Total SMS/Email messages successfully sent.",
+    },
+    {
+      label: locale === "zh" ? "待发消息" : "Message drafts",
+      value: String(summary.messaging?.draft ?? 0),
+      helper:
+        locale === "zh"
+          ? "等待人工确认后发送的消息草稿。"
+          : "Drafts awaiting operator confirmation to send.",
+    },
+    {
+      label: locale === "zh" ? "待处理评价" : "Pending reviews",
+      value: String(summary.reviews?.requested ?? 0),
+      helper:
+        locale === "zh"
+          ? "等待客户提交的评价请求。"
+          : "Review requests awaiting customer submission.",
+    },
+    {
+      label: locale === "zh" ? "平均评分" : "Average rating",
+      value: summary.reviews?.averageRating != null ? String(summary.reviews.averageRating) : "-",
+      helper:
+        locale === "zh"
+          ? "基于所有已评分的客户评价。"
+          : "Based on all rated customer reviews.",
+    },
+  ];
+
+  const queue: DashboardQueueItem[] = [];
+  if (summary.nextAppointment) {
+    queue.push({
+      id: summary.nextAppointment.id,
+      title:
+        locale === "zh"
+          ? `${summary.nextAppointment.customerName} 即将到店`
+          : `${summary.nextAppointment.customerName} upcoming visit`,
+      detail:
+        summary.nextAppointment.serviceName
+          ? `${summary.nextAppointment.serviceName} · ${new Date(summary.nextAppointment.startsAt).toLocaleString(locale === "zh" ? "zh-CN" : "en-US")}`
+          : new Date(summary.nextAppointment.startsAt).toLocaleString(
+              locale === "zh" ? "zh-CN" : "en-US",
+            ),
+      tone: "success",
+    });
+  }
+
+  const counts = customerList.summary.countsByStatus;
+  const stages: DashboardStageItem[] = dashboardStages.map((stage) => {
+    const apiKey = Object.entries(statusToStage).find(
+      ([, v]) => v === stage,
+    )?.[0];
+    return {
+      stage,
+      label: stageLabels[locale][stage],
+      count: apiKey ? (counts[apiKey] ?? 0) : 0,
+    };
+  });
+
+  const insights: DashboardInsight[] = customerList.items.slice(0, 3).map(
+    (c) => ({
+      id: c.id,
+      customerName: c.fullName,
+      summary: c.notes || (locale === "zh" ? "暂无备注" : "No notes yet"),
+      actionLabel: c.owner
+        ? locale === "zh"
+          ? `负责人: ${c.owner.name}`
+          : `Owner: ${c.owner.name}`
+        : locale === "zh"
+          ? "未分配负责人"
+          : "No owner assigned",
+    }),
+  );
+
+  return {
+    metrics,
+    queue,
+    stages,
+    insights,
+    dependencies: [],
+  };
+}
+
+function getPlaceholderSnapshot(locale: Locale): DashboardSnapshot {
   const openLeadCount = customerRecords.filter((customer) =>
     ["new_lead", "contacted"].includes(customer.stage),
   ).length;
@@ -116,55 +267,35 @@ export async function getDashboardSnapshot(
         helper: copy[locale].appointmentsHelper,
       },
       {
-        label: locale === "zh" ? "待审提醒" : "Reminders to review",
+        label: locale === "zh" ? "今日预约" : "Today's appointments",
         value: String(reminderReadyCount),
-        helper: copy[locale].remindersHelper,
+        helper: copy[locale].todayHelper,
       },
       {
-        label: locale === "zh" ? "人工跟进" : "Manual follow-ups",
+        label: locale === "zh" ? "活跃客户" : "Active clients",
         value: String(followUpCount),
-        helper: copy[locale].followUpsHelper,
+        helper: copy[locale].activeHelper,
       },
     ],
     queue: [
       {
-        id: "queue-li-wei",
-        title: locale === "zh" ? "Li Wei 14:00 到店" : "Li Wei arrives at 2:00 PM",
-        detail:
-          locale === "zh"
-            ? "提醒文案已经就绪，只差人工确认发送。"
-            : "Reminder copy is ready and only needs a manual send decision.",
-        tone: "success",
-      },
-      {
-        id: "queue-emma",
+        id: "queue-placeholder",
         title:
           locale === "zh"
-            ? "Emma Chen 等待周末档期答复"
-            : "Emma Chen is waiting on weekend options",
+            ? "占位数据 — 请登录查看真实数据"
+            : "Placeholder — sign in to see real data",
         detail:
           locale === "zh"
-            ? "建议回复两个可选时段，并说明停车信息。"
-            : "Reply with two candidate slots and a quick parking note.",
-        tone: "warning",
-      },
-      {
-        id: "queue-olivia",
-        title:
-          locale === "zh"
-            ? "Olivia Johnson 可推进套餐升级"
-            : "Olivia Johnson is ready for package follow-up",
-        detail:
-          locale === "zh"
-            ? "昨天服务已完成，今天适合发送升级方案。"
-            : "Yesterday's completed visit created a natural upsell moment today.",
+            ? "登录后此处将展示来自后端的真实运营队列。"
+            : "Once signed in, this panel shows live operational data from the backend.",
         tone: "info",
       },
     ],
     stages: dashboardStages.map((stage) => ({
       stage,
       label: stageLabels[locale][stage],
-      count: customerRecords.filter((customer) => customer.stage === stage).length,
+      count: customerRecords.filter((customer) => customer.stage === stage)
+        .length,
     })),
     insights: customerRecords.slice(0, 3).map((customer) => ({
       id: customer.id,
@@ -174,28 +305,12 @@ export async function getDashboardSnapshot(
     })),
     dependencies: [
       {
-        id: "dep-customers",
-        label: locale === "zh" ? "客户列表接口" : "Customer list endpoint",
+        id: "dep-login",
+        label: locale === "zh" ? "需要登录" : "Sign in required",
         detail:
           locale === "zh"
-            ? "这里会接入 workspace-aware CRM read model，替换当前静态客户快照。"
-            : "Swap in the workspace-aware CRM read model for real customer counts.",
-      },
-      {
-        id: "dep-appointments",
-        label: locale === "zh" ? "预约读模型" : "Appointments read model",
-        detail:
-          locale === "zh"
-            ? "用于提供今日队列、提醒状态和预约明细。"
-            : "Needed for today's queue, reminder state, and schedule detail.",
-      },
-      {
-        id: "dep-ai",
-        label: locale === "zh" ? "AI 建议服务" : "AI suggestion service",
-        detail:
-          locale === "zh"
-            ? "后续用真实摘要和 next-best-action 替换占位建议。"
-            : "Placeholder suggestions can be replaced with live summaries later.",
+            ? "当前显示占位数据。请先登录以加载真实的工作空间数据。"
+            : "Showing placeholder data. Sign in to load real workspace data.",
       },
     ],
   };

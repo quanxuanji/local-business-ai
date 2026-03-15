@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { FeaturePanel } from "../../components/feature-panel";
 import { MetricCard } from "../../components/metric-card";
 import { StatusBadge } from "../../components/status-badge";
@@ -89,9 +91,12 @@ export function DashboardWidgets({
                 className="rounded-xl border border-stone-200 bg-white p-4"
               >
                 <div className="flex items-center justify-between gap-3">
-                  <h3 className="text-sm font-semibold text-ink">
+                  <Link
+                    href={`/${locale}/customers/${insight.id}`}
+                    className="text-sm font-semibold text-ink hover:text-pine"
+                  >
                     {insight.customerName}
-                  </h3>
+                  </Link>
                   <StatusBadge tone="info">
                     {locale === "zh" ? "建议" : "Suggested"}
                   </StatusBadge>
@@ -101,6 +106,11 @@ export function DashboardWidgets({
                 </p>
                 <p className="mt-3 text-sm font-medium text-ink">
                   {insight.actionLabel}
+                </p>
+                <p className="mt-2 text-xs text-violet-600">
+                  {locale === "zh"
+                    ? "→ 在客户详情页可使用 AI 摘要和建议功能"
+                    : "→ Use AI summary & suggestions on the customer detail page"}
                 </p>
               </article>
             ))}

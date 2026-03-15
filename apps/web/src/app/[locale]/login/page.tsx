@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { FeaturePanel } from "../../../components/feature-panel";
 import { getDictionary, getLocaleFromValue } from "../../../lib/i18n";
+import { LoginForm } from "./login-form";
 
 export default async function LoginPage({
   params,
@@ -29,51 +29,44 @@ export default async function LoginPage({
             {dictionary.loginTitle}
           </h1>
           <p className="mt-4 max-w-2xl text-lg leading-8 text-slate">
-            {dictionary.loginDescription}
+            {locale === "zh"
+              ? "输入工作空间 slug 和邮箱登录，开始管理客户运营。"
+              : "Enter your workspace slug and email to sign in and start managing customer operations."}
           </p>
 
           <div className="mt-10 grid gap-4 sm:grid-cols-2">
             <div className="rounded-2xl bg-sky p-5">
-              <p className="text-sm font-semibold text-ink">Phase 1</p>
+              <p className="text-sm font-semibold text-ink">
+                {locale === "zh" ? "测试账号" : "Test account"}
+              </p>
               <p className="mt-2 text-sm text-slate">
-                Auth, workspace, and customer onboarding land first so operators
-                can start from lead capture immediately.
+                {locale === "zh"
+                  ? "Slug: downtown-dental，邮箱: mia@example.com"
+                  : "Slug: downtown-dental, Email: mia@example.com"}
               </p>
             </div>
             <div className="rounded-2xl bg-mist p-5">
-              <p className="text-sm font-semibold text-ink">AI posture</p>
+              <p className="text-sm font-semibold text-ink">
+                {locale === "zh" ? "AI 辅助模式" : "AI posture"}
+              </p>
               <p className="mt-2 text-sm text-slate">
-                Suggestions only. Human confirmation remains required before any
-                customer-facing action.
+                {locale === "zh"
+                  ? "仅提供建议，所有客户操作均需人工确认。"
+                  : "Suggestions only. Human confirmation remains required before any customer-facing action."}
               </p>
             </div>
           </div>
         </section>
 
         <FeaturePanel
-          title="Authentication placeholder"
-          description="This form is intentionally non-functional until the NestJS auth module and session handling are implemented."
+          title={locale === "zh" ? "运营人员登录" : "Operator sign-in"}
+          description={
+            locale === "zh"
+              ? "输入 workspace slug 和邮箱即可登录。"
+              : "Enter your workspace slug and email to get started."
+          }
         >
-          <div className="space-y-4">
-            <div className="rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-slate">
-              Workspace email
-            </div>
-            <div className="rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-slate">
-              Password
-            </div>
-            <button
-              type="button"
-              className="w-full rounded-xl bg-ink px-4 py-3 text-sm font-semibold text-white"
-            >
-              Sign in later
-            </button>
-            <Link
-              href={`/${locale}/dashboard`}
-              className="block text-center text-sm font-medium text-pine"
-            >
-              Explore scaffolded dashboard
-            </Link>
-          </div>
+          <LoginForm locale={locale} />
         </FeaturePanel>
       </div>
     </div>

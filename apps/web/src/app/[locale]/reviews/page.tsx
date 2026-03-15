@@ -1,8 +1,11 @@
 import { notFound } from "next/navigation";
 
 import { AppShell } from "../../../components/app-shell";
-import { FeaturePanel } from "../../../components/feature-panel";
+import { apiFetch } from "../../../lib/api-client";
+import type { ReviewResponse } from "../../../lib/api-types";
 import { getLocaleFromValue } from "../../../lib/i18n";
+import { getSession } from "../../../lib/session";
+import { ReviewsListView } from "../../../features/reviews/reviews-list-view";
 
 export default async function ReviewsPage({
   params,
@@ -11,26 +14,34 @@ export default async function ReviewsPage({
 }) {
   const { locale: routeLocale } = await params;
   const locale = getLocaleFromValue(routeLocale);
+  if (!locale) notFound();
 
-  if (!locale) {
-    notFound();
+  const session = await getSession();
+  let reviews: ReviewResponse[] = [];
+
+  if (session) {
+    try {
+      reviews = await apiFetch<ReviewResponse[]>(
+        `/workspaces/${session.workspaceId}/reviews`,
+        { token: session.token },
+      );
+    } catch {
+      /* reviews unavailable */
+    }
   }
 
   return (
     <AppShell
       locale={locale}
       section="reviews"
-      title="Review collection"
-      description="Review requests stay lightweight in the MVP: send request, track response status, and connect the result back to the customer record."
+      title={locale === "zh" ? "评价管理" : "Reviews"}
+      description={
+        locale === "zh"
+          ? "查看和管理客户评价，跟踪评价请求状态。"
+          : "View and manage customer reviews, track review request status."
+      }
     >
-      <FeaturePanel
-        title="Request queue"
-        description="Operators will review pending review requests here before outbound SMS or email is dispatched."
-      />
-      <FeaturePanel
-        title="Response tracking"
-        description="Submitted ratings, comments, and external review links will roll up here once the reviews module is implemented."
-      />
+      <ReviewsListView locale={locale} reviews={reviews} />
     </AppShell>
   );
 }

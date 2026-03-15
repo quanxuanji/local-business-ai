@@ -2,6 +2,9 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { getDictionary, type Locale, type SectionKey } from "../lib/i18n";
+import { getSession } from "../lib/session";
+import { logoutAction } from "../app/[locale]/login/actions";
+import { LogoutButton } from "./logout-button";
 
 const navigationOrder: SectionKey[] = [
   "dashboard",
@@ -21,7 +24,7 @@ type AppShellProps = {
   children: ReactNode;
 };
 
-export function AppShell({
+export async function AppShell({
   locale,
   section,
   title,
@@ -29,6 +32,7 @@ export function AppShell({
   children,
 }: AppShellProps) {
   const dictionary = getDictionary(locale);
+  const session = await getSession();
 
   return (
     <div className="min-h-screen">
@@ -41,7 +45,26 @@ export function AppShell({
             <h1 className="mt-3 text-2xl font-semibold">{dictionary.appTagline}</h1>
           </Link>
 
-          <nav className="mt-8 space-y-2">
+          {session && (
+            <div className="mt-4 rounded-xl border border-stone-200 bg-mist/50 px-4 py-3">
+              <p className="text-sm font-semibold text-ink">{session.userName}</p>
+              <p className="mt-0.5 text-xs text-slate">{session.workspaceName}</p>
+              <div className="mt-2">
+                <LogoutButton locale={locale} action={logoutAction} />
+              </div>
+            </div>
+          )}
+
+          {!session && (
+            <Link
+              href={`/${locale}/login`}
+              className="mt-4 block rounded-xl bg-ink px-4 py-3 text-center text-sm font-semibold text-white"
+            >
+              {locale === "zh" ? "登录" : "Sign in"}
+            </Link>
+          )}
+
+          <nav className="mt-6 space-y-2">
             {navigationOrder.map((item) => {
               const isActive = item === section;
 
@@ -66,7 +89,7 @@ export function AppShell({
           <div className="rounded-[2rem] bg-white/90 px-8 py-8 shadow-panel backdrop-blur">
             <div className="border-b border-stone-200 pb-6">
               <p className="text-sm font-semibold uppercase tracking-[0.18em] text-pine">
-                MVP scaffold
+                {session ? session.workspaceName : "MVP scaffold"}
               </p>
               <h2 className="mt-3 text-3xl font-semibold">{title}</h2>
               <p className="mt-3 max-w-3xl text-base text-slate">{description}</p>

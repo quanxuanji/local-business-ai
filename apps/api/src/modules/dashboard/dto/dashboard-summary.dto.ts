@@ -36,6 +36,20 @@ export class DashboardRecentCustomerDto {
   createdAt!: Date;
 }
 
+export class DashboardMessagingSummaryDto {
+  total!: number;
+  draft!: number;
+  sent!: number;
+  failed!: number;
+}
+
+export class DashboardReviewsSummaryDto {
+  total!: number;
+  requested!: number;
+  submitted!: number;
+  averageRating!: number | null;
+}
+
 export class DashboardSummaryDto {
   workspaceId!: string;
   timezone!: string;
@@ -43,6 +57,8 @@ export class DashboardSummaryDto {
   generatedAt!: Date;
   customers!: DashboardCustomerSummaryDto;
   appointments!: DashboardAppointmentSummaryDto;
+  messaging!: DashboardMessagingSummaryDto;
+  reviews!: DashboardReviewsSummaryDto;
   nextAppointment!: DashboardNextAppointmentDto | null;
   recentCustomers!: DashboardRecentCustomerDto[];
 }

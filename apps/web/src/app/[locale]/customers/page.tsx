@@ -27,18 +27,20 @@ export default async function CustomersPage({
       title={locale === "zh" ? "客户列表" : "Customer CRM"}
       description={
         locale === "zh"
-          ? "Phase 1 先把线索和客户统一放进同一个列表，后续再接入真实筛选、分页和 CRM 查询能力。"
-          : "Phase 1 keeps leads and customers in one practical roster, with room to add real filtering and CRM queries later."
+          ? "管理线索和客户，查看客户状态和负责人分配情况。"
+          : "Manage leads and customers, view status and owner assignments."
       }
     >
-      <CustomersListView locale={locale} snapshot={snapshot} />
+      <div className="flex justify-end">
+        <Link
+          href={`/${locale}/customers/new`}
+          className="inline-flex rounded-xl bg-ink px-5 py-3 text-sm font-semibold text-white hover:bg-ink/90"
+        >
+          {locale === "zh" ? "+ 新建客户" : "+ New customer"}
+        </Link>
+      </div>
 
-      <Link
-        href={`/${locale}/customers/emma-chen`}
-        className="inline-flex rounded-xl bg-ink px-4 py-3 text-sm font-semibold text-white"
-      >
-        {locale === "zh" ? "打开示例客户" : "Open sample customer"}
-      </Link>
+      <CustomersListView locale={locale} snapshot={snapshot} />
     </AppShell>
   );
 }

@@ -1,5 +1,10 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { AppointmentStatus, CustomerStatus } from "@prisma/client";
+import {
+  AppointmentStatus,
+  CustomerStatus,
+  MessageStatus,
+  ReviewStatus,
+} from "@prisma/client";
 
 import { PrismaService } from "../../prisma/prisma.service";
 import { DashboardSummaryDto } from "./dto/dashboard-summary.dto";
@@ -43,6 +48,14 @@ export class DashboardService {
       todayAppointments,
       nextAppointment,
       recentCustomers,
+      totalMessages,
+      draftMessages,
+      sentMessages,
+      failedMessages,
+      totalReviews,
+      requestedReviews,
+      submittedReviews,
+      ratedReviews,
     ] = await Promise.all([
       this.prisma.customer.count({ where: { workspaceId } }),
       this.prisma.customer.count({
@@ -121,7 +134,34 @@ export class DashboardService {
           createdAt: true,
         },
       }),
+      this.prisma.message.count({ where: { workspaceId } }),
+      this.prisma.message.count({
+        where: { workspaceId, status: MessageStatus.DRAFT },
+      }),
+      this.prisma.message.count({
+        where: { workspaceId, status: MessageStatus.SENT },
+      }),
+      this.prisma.message.count({
+        where: { workspaceId, status: MessageStatus.FAILED },
+      }),
+      this.prisma.review.count({ where: { workspaceId } }),
+      this.prisma.review.count({
+        where: { workspaceId, status: ReviewStatus.REQUESTED },
+      }),
+      this.prisma.review.count({
+        where: { workspaceId, status: ReviewStatus.SUBMITTED },
+      }),
+      this.prisma.review.findMany({
+        where: { workspaceId, rating: { not: null } },
+        select: { rating: true },
+      }),
     ]);
+
+    const avgRating =
+      ratedReviews.length > 0
+        ? ratedReviews.reduce((s, r) => s + (r.rating ?? 0), 0) /
+          ratedReviews.length
+        : null;
 
     return {
       workspaceId: workspace.id,
@@ -142,6 +182,20 @@ export class DashboardService {
         canceled: canceledAppointments,
         upcoming: upcomingAppointments,
         today: todayAppointments,
+      },
+      messaging: {
+        total: totalMessages,
+        draft: draftMessages,
+        sent: sentMessages,
+        failed: failedMessages,
+      },
+      reviews: {
+        total: totalReviews,
+        requested: requestedReviews,
+        submitted: submittedReviews,
+        averageRating: avgRating
+          ? Math.round(avgRating * 10) / 10
+          : null,
       },
       nextAppointment: nextAppointment
         ? {

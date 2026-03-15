@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { AppShell } from "../../../components/app-shell";
@@ -19,6 +20,21 @@ export default async function DashboardPage({
 
   const snapshot = await getDashboardSnapshot(locale);
 
+  const quickActions = [
+    {
+      href: `/${locale}/customers/new`,
+      label: locale === "zh" ? "+ 新建客户" : "+ New customer",
+    },
+    {
+      href: `/${locale}/appointments/new`,
+      label: locale === "zh" ? "+ 新建预约" : "+ New appointment",
+    },
+    {
+      href: `/${locale}/reviews`,
+      label: locale === "zh" ? "评价管理" : "Reviews",
+    },
+  ];
+
   return (
     <AppShell
       locale={locale}
@@ -26,10 +42,22 @@ export default async function DashboardPage({
       title={locale === "zh" ? "运营总览" : "Operations dashboard"}
       description={
         locale === "zh"
-          ? "先用安全占位数据搭建运营总览，后续直接替换为真实客户、预约和 AI 建议读模型。"
-          : "The dashboard now uses placeholder-safe data flow and is ready to swap to real customer, booking, and AI read models."
+          ? "查看客户、预约、消息和评价数据概览。"
+          : "Overview of customers, appointments, messaging and review metrics."
       }
     >
+      <div className="flex flex-wrap gap-3">
+        {quickActions.map((a) => (
+          <Link
+            key={a.href}
+            href={a.href}
+            className="inline-flex rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-sm font-semibold text-ink hover:bg-mist"
+          >
+            {a.label}
+          </Link>
+        ))}
+      </div>
+
       <DashboardWidgets locale={locale} snapshot={snapshot} />
     </AppShell>
   );

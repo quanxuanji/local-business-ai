@@ -5,6 +5,11 @@ import { MetricCard } from "../../components/metric-card";
 import { StatusBadge } from "../../components/status-badge";
 import type { Locale } from "../../lib/i18n";
 import { formatDateTime } from "../operations/format";
+import {
+  updateAppointmentStatusAction,
+  deleteAppointmentAction,
+} from "./appointment-actions";
+import { AppointmentStatusButtons } from "./appointment-status-buttons";
 import type { AppointmentsSnapshot } from "./data";
 
 type AppointmentsListViewProps = {
@@ -55,6 +60,9 @@ export function AppointmentsListView({
                 </th>
                 <th className="px-4 py-3 font-semibold">
                   {locale === "zh" ? "提醒" : "Reminder"}
+                </th>
+                <th className="px-4 py-3 font-semibold">
+                  {locale === "zh" ? "操作" : "Actions"}
                 </th>
               </tr>
             </thead>
@@ -114,6 +122,15 @@ export function AppointmentsListView({
                           ? "等待中"
                           : "Waiting"}
                     </StatusBadge>
+                  </td>
+                  <td className="px-4 py-4">
+                    <AppointmentStatusButtons
+                      locale={locale}
+                      appointmentId={appointment.id}
+                      currentStatus={appointment.status}
+                      onStatusChange={updateAppointmentStatusAction.bind(null, locale)}
+                      onDelete={deleteAppointmentAction.bind(null, locale)}
+                    />
                   </td>
                 </tr>
               ))}
