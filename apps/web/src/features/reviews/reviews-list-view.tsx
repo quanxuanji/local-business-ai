@@ -5,6 +5,11 @@ import { MetricCard } from "../../components/metric-card";
 import { StatusBadge } from "../../components/status-badge";
 import type { Locale } from "../../lib/i18n";
 import type { ReviewResponse } from "../../lib/api-types";
+import {
+  getReviewStatusLabel,
+  getReviewStatusTone,
+} from "../../lib/status-labels";
+import { formatDate } from "../operations/format";
 import { submitReviewAction } from "./review-actions";
 import { SubmitReviewForm } from "./submit-review-form";
 
@@ -83,19 +88,13 @@ export function ReviewsListView({ locale, reviews }: ReviewsListViewProps) {
                     {review.customer.fullName}
                   </Link>
                   <StatusBadge
-                    tone={
-                      review.status === "SUBMITTED"
-                        ? "success"
-                        : review.status === "DISMISSED"
-                          ? "warning"
-                          : "neutral"
-                    }
+                    tone={getReviewStatusTone(review.status)}
                   >
-                    {review.status}
+                    {getReviewStatusLabel(locale, review.status)}
                   </StatusBadge>
                   <span className="text-xs text-slate">{review.channel}</span>
                   <span className="ml-auto text-xs text-slate">
-                    {new Date(review.createdAt).toLocaleDateString()}
+                    {formatDate(locale, review.createdAt)}
                   </span>
                 </div>
                 <div className="mt-2 flex items-center gap-4">

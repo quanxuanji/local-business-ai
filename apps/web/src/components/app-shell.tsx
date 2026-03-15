@@ -1,10 +1,11 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 
 import { getDictionary, type Locale, type SectionKey } from "../lib/i18n";
 import { getSession } from "../lib/session";
 import { logoutAction } from "../app/[locale]/login/actions";
 import { LogoutButton } from "./logout-button";
+import { ToastHandler } from "./toast-handler";
 
 const navigationOrder: SectionKey[] = [
   "dashboard",
@@ -99,6 +100,9 @@ export async function AppShell({
           </div>
         </main>
       </div>
+      <Suspense>
+        <ToastHandler locale={locale} />
+      </Suspense>
     </div>
   );
 }

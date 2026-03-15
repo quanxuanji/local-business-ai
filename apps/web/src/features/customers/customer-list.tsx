@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { EmptyState } from "../../components/empty-state";
 import { FeaturePanel } from "../../components/feature-panel";
 import { MetricCard } from "../../components/metric-card";
 import { StatusBadge } from "../../components/status-badge";
@@ -70,6 +71,21 @@ export function CustomersListView({
             : "This list is wired for placeholder-safe rendering now and can later swap to a real backend query."
         }
       >
+        {snapshot.customers.length === 0 ? (
+          <EmptyState
+            icon="👥"
+            title={locale === "zh" ? "暂无客户" : "No customers yet"}
+            description={
+              locale === "zh"
+                ? "创建第一位客户，开始管理您的客户关系。"
+                : "Create your first customer to start managing your client relationships."
+            }
+            action={{
+              label: locale === "zh" ? "+ 新建客户" : "+ New customer",
+              href: `/${locale}/customers/new`,
+            }}
+          />
+        ) : (
         <div className="overflow-hidden rounded-2xl border border-stone-200">
           <table className="min-w-full divide-y divide-stone-200 bg-white text-left">
             <thead className="bg-mist/70 text-xs uppercase tracking-[0.18em] text-slate">
@@ -144,6 +160,7 @@ export function CustomersListView({
             </tbody>
           </table>
         </div>
+        )}
       </FeaturePanel>
 
       <div className="grid gap-6 xl:grid-cols-2">

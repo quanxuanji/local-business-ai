@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef } from "react";
+import { toast } from "sonner";
 
 import type { Locale } from "../../lib/i18n";
 import type { FormState } from "./workflow-actions";
@@ -35,6 +36,14 @@ export function WorkflowRuleForm({ locale, action }: WorkflowRuleFormProps) {
 
   const inputCls =
     "w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-ink placeholder:text-slate focus:border-pine focus:outline-none focus:ring-1 focus:ring-pine";
+
+  const toastFired = useRef(false);
+  useEffect(() => {
+    if (state.success && !toastFired.current) {
+      toastFired.current = true;
+      toast.success(locale === "zh" ? "工作流规则已创建！" : "Workflow rule created!");
+    }
+  }, [state.success, locale]);
 
   if (state.success) {
     return (

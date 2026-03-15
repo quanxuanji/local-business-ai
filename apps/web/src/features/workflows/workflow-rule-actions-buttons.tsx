@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { toast } from "sonner";
 
 import type { Locale } from "../../lib/i18n";
 import type { FormState } from "./workflow-actions";
@@ -45,8 +46,9 @@ export function WorkflowRuleActionsButtons({
           type="button"
           disabled={isPending}
           onClick={() =>
-            startTransition(() => {
-              onToggle(ruleId, !isActive);
+            startTransition(async () => {
+              await onToggle(ruleId, !isActive);
+              toast.success(locale === "zh" ? "规则状态已切换" : "Rule toggled");
             })
           }
           className={`rounded-lg border px-2.5 py-1 text-xs font-medium disabled:opacity-50 ${
@@ -68,8 +70,9 @@ export function WorkflowRuleActionsButtons({
                 ? "确定要删除此规则吗？"
                 : "Delete this rule?";
             if (confirm(msg)) {
-              startTransition(() => {
-                onDelete(ruleId);
+              startTransition(async () => {
+                await onDelete(ruleId);
+                toast.success(locale === "zh" ? "规则已删除" : "Rule deleted");
               });
             }
           }}

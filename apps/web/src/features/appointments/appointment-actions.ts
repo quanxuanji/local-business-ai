@@ -43,7 +43,7 @@ export async function createAppointmentAction(
   }
 
   revalidatePath(`/${locale}/appointments`);
-  redirect(`/${locale}/appointments`);
+  redirect(`/${locale}/appointments?toast=appointment-created`);
 }
 
 export async function updateAppointmentStatusAction(
@@ -71,7 +71,7 @@ export async function updateAppointmentStatusAction(
   }
 
   revalidatePath(`/${locale}/appointments`);
-  redirect(`/${locale}/appointments`);
+  redirect(`/${locale}/appointments?toast=appointment-updated`);
 }
 
 export async function deleteAppointmentAction(
@@ -94,5 +94,5 @@ export async function deleteAppointmentAction(
   }
 
   revalidatePath(`/${locale}/appointments`);
-  redirect(`/${locale}/appointments`);
+  redirect(`/${locale}/appointments?toast=appointment-deleted`);
 }

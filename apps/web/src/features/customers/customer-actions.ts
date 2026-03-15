@@ -45,7 +45,7 @@ export async function createCustomerAction(
     return { error: "Failed to create customer." };
   }
 
-  redirect(`/${locale}/customers/${created.id}`);
+  redirect(`/${locale}/customers/${created.id}?toast=customer-created`);
 }
 
 export async function updateCustomerAction(
@@ -89,7 +89,7 @@ export async function updateCustomerAction(
   }
 
   revalidatePath(`/${locale}/customers/${customerId}`);
-  redirect(`/${locale}/customers/${customerId}`);
+  redirect(`/${locale}/customers/${customerId}?toast=customer-updated`);
 }
 
 export async function deleteCustomerAction(
@@ -112,5 +112,5 @@ export async function deleteCustomerAction(
   }
 
   revalidatePath(`/${locale}/customers`);
-  redirect(`/${locale}/customers`);
+  redirect(`/${locale}/customers?toast=customer-deleted`);
 }

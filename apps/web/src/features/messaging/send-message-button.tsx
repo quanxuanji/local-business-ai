@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { toast } from "sonner";
 
 type SendMessageButtonProps = {
   locale: string;
@@ -20,8 +21,9 @@ export function SendMessageButton({ locale, onSend }: SendMessageButtonProps) {
             ? "确认发送此消息？"
             : "Confirm sending this message?";
         if (confirm(msg)) {
-          startTransition(() => {
-            onSend();
+          startTransition(async () => {
+            await onSend();
+            toast.success(locale === "zh" ? "消息已发送！" : "Message sent!");
           });
         }
       }}

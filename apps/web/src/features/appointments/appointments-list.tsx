@@ -1,9 +1,14 @@
 import Link from "next/link";
 
+import { EmptyState } from "../../components/empty-state";
 import { FeaturePanel } from "../../components/feature-panel";
 import { MetricCard } from "../../components/metric-card";
 import { StatusBadge } from "../../components/status-badge";
 import type { Locale } from "../../lib/i18n";
+import {
+  getAppointmentStatusLabel,
+  getAppointmentStatusTone,
+} from "../../lib/status-labels";
 import { formatDateTime } from "../operations/format";
 import {
   updateAppointmentStatusAction,
@@ -42,6 +47,21 @@ export function AppointmentsListView({
             : "The screen stays production-like without introducing hard coupling to unfinished APIs."
         }
       >
+        {snapshot.appointments.length === 0 ? (
+          <EmptyState
+            icon="📅"
+            title={locale === "zh" ? "暂无预约" : "No appointments yet"}
+            description={
+              locale === "zh"
+                ? "创建第一个预约，开始管理您的日程。"
+                : "Create your first appointment to start managing your schedule."
+            }
+            action={{
+              label: locale === "zh" ? "+ 新建预约" : "+ New appointment",
+              href: `/${locale}/appointments/new`,
+            }}
+          />
+        ) : (
         <div className="overflow-hidden rounded-2xl border border-stone-200">
           <table className="min-w-full divide-y divide-stone-200 bg-white text-left">
             <thead className="bg-mist/70 text-xs uppercase tracking-[0.18em] text-slate">
@@ -96,15 +116,9 @@ export function AppointmentsListView({
                   </td>
                   <td className="px-4 py-4">
                     <StatusBadge
-                      tone={
-                        appointment.status === "completed"
-                          ? "success"
-                          : appointment.status === "confirmed"
-                            ? "info"
-                            : "warning"
-                      }
+                      tone={getAppointmentStatusTone(appointment.status)}
                     >
-                      {appointment.status}
+                      {getAppointmentStatusLabel(locale, appointment.status)}
                     </StatusBadge>
                     <p className="mt-3 text-sm leading-6 text-slate">
                       {appointment.note}
@@ -137,6 +151,7 @@ export function AppointmentsListView({
             </tbody>
           </table>
         </div>
+        )}
       </FeaturePanel>
 
       <div className="grid gap-6 xl:grid-cols-2">

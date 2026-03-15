@@ -2,6 +2,7 @@ import { FeaturePanel } from "../../components/feature-panel";
 import { StatusBadge } from "../../components/status-badge";
 import type { Locale } from "../../lib/i18n";
 import type { WorkflowRuleResponse } from "../../lib/api-types";
+import { formatDate } from "../operations/format";
 import {
   toggleWorkflowRuleAction,
   deleteWorkflowRuleAction,
@@ -88,7 +89,7 @@ export function WorkflowRulesList({
                       : "Paused"}
                 </StatusBadge>
                 <span className="ml-auto text-xs text-slate">
-                  {new Date(rule.createdAt).toLocaleDateString()}
+                  {formatDate(locale, rule.createdAt)}
                 </span>
               </div>
               <div className="mt-2 flex flex-wrap gap-3 text-sm text-slate">

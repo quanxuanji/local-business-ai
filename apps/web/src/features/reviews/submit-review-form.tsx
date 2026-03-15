@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { toast } from "sonner";
 
 type SubmitReviewFormProps = {
   locale: string;
@@ -65,8 +66,13 @@ export function SubmitReviewForm({
           setError(null);
           startTransition(async () => {
             const result = await onSubmit(reviewId, rating, comment);
-            if (result.error) setError(result.error);
-            else setDone(true);
+            if (result.error) {
+              setError(result.error);
+              toast.error(result.error);
+            } else {
+              setDone(true);
+              toast.success(locale === "zh" ? "评价已提交！" : "Review submitted!");
+            }
           });
         }}
         className="rounded-lg bg-ink px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"

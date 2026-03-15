@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 
+import { ApiErrorBanner } from "../../../components/api-error-banner";
 import { AppShell } from "../../../components/app-shell";
 import { FeaturePanel } from "../../../components/feature-panel";
 import { LoginRequiredBanner } from "../../../components/login-required-banner";
@@ -22,6 +23,7 @@ export default async function WorkflowsPage({
 
   const session = await getSession();
   let rules: WorkflowRuleResponse[] = [];
+  let apiError = false;
 
   if (session) {
     try {
@@ -30,7 +32,7 @@ export default async function WorkflowsPage({
         { token: session.token },
       );
     } catch {
-      /* rules unavailable */
+      apiError = true;
     }
   }
 
@@ -48,6 +50,7 @@ export default async function WorkflowsPage({
       }
     >
       {!session && <LoginRequiredBanner locale={locale} />}
+      {apiError && <ApiErrorBanner locale={locale} />}
 
       <FeaturePanel
         title={locale === "zh" ? "新建规则" : "Create rule"}

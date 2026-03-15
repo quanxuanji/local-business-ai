@@ -37,12 +37,19 @@ export type OwnerLoad = {
   customerCount: number;
 };
 
+export type PaginationInfo = {
+  page: number;
+  totalPages: number;
+  total: number;
+};
+
 export type CustomerListSnapshot = {
   metrics: CustomerListMetric[];
   customers: CustomerListItem[];
   ownerLoads: OwnerLoad[];
   dependencies: string[];
   apiError?: boolean;
+  pagination?: PaginationInfo;
 };
 
 export type CustomerTimelineItem = {
@@ -97,8 +104,11 @@ const appointmentStatusMap: Record<string, "pending" | "confirmed" | "completed"
   NO_SHOW: "completed",
 };
 
+const PAGE_SIZE = 20;
+
 export async function getCustomersSnapshot(
   locale: Locale,
+  page = 1,
 ): Promise<CustomerListSnapshot> {
   const session = await getSession();
 
@@ -109,7 +119,7 @@ export async function getCustomersSnapshot(
   try {
     const response = await apiFetch<CustomerListResponse>(
       `/workspaces/${session.workspaceId}/customers`,
-      { token: session.token, params: { limit: 50 } },
+      { token: session.token, params: { limit: PAGE_SIZE, page } },
     );
 
     return transformCustomerList(locale, response);
@@ -195,6 +205,11 @@ function transformCustomerList(
       customerCount,
     })),
     dependencies: [],
+    pagination: {
+      page: response.pagination.page,
+      totalPages: response.pagination.pages,
+      total: response.pagination.total,
+    },
   };
 }
 

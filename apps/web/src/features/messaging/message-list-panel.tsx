@@ -2,6 +2,11 @@ import { FeaturePanel } from "../../components/feature-panel";
 import { StatusBadge } from "../../components/status-badge";
 import type { Locale } from "../../lib/i18n";
 import type { MessageResponse } from "../../lib/api-types";
+import {
+  getMessageStatusLabel,
+  getMessageStatusTone,
+} from "../../lib/status-labels";
+import { formatDateTime } from "../operations/format";
 import { sendMessageAction } from "./message-actions";
 import { SendMessageButton } from "./send-message-button";
 
@@ -47,15 +52,9 @@ export function MessageListPanel({ locale, messages }: MessageListPanelProps) {
           >
             <div className="flex flex-wrap items-center gap-2">
               <StatusBadge
-                tone={
-                  msg.status === "SENT"
-                    ? "success"
-                    : msg.status === "FAILED"
-                      ? "warning"
-                      : "neutral"
-                }
+                tone={getMessageStatusTone(msg.status)}
               >
-                {msg.status}
+                {getMessageStatusLabel(locale, msg.status)}
               </StatusBadge>
               <span className="text-xs text-slate">{msg.channel}</span>
               {msg.subject && (
@@ -64,7 +63,7 @@ export function MessageListPanel({ locale, messages }: MessageListPanelProps) {
                 </span>
               )}
               <span className="ml-auto text-xs text-slate">
-                {new Date(msg.createdAt).toLocaleString()}
+                {formatDateTime(locale, msg.createdAt)}
               </span>
             </div>
             <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-ink">

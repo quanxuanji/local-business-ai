@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 
+import { ApiErrorBanner } from "../../../components/api-error-banner";
 import { AppShell } from "../../../components/app-shell";
 import { LoginRequiredBanner } from "../../../components/login-required-banner";
 import { apiFetch } from "../../../lib/api-client";
@@ -19,6 +20,7 @@ export default async function ReviewsPage({
 
   const session = await getSession();
   let reviews: ReviewResponse[] = [];
+  let apiError = false;
 
   if (session) {
     try {
@@ -27,7 +29,7 @@ export default async function ReviewsPage({
         { token: session.token },
       );
     } catch {
-      /* reviews unavailable */
+      apiError = true;
     }
   }
 
@@ -43,6 +45,7 @@ export default async function ReviewsPage({
       }
     >
       {!session && <LoginRequiredBanner locale={locale} />}
+      {apiError && <ApiErrorBanner locale={locale} />}
       <ReviewsListView locale={locale} reviews={reviews} />
     </AppShell>
   );

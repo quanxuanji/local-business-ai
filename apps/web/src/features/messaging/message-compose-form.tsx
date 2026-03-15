@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef } from "react";
+import { toast } from "sonner";
 
 import type { Locale } from "../../lib/i18n";
 import type { FormState } from "./message-actions";
@@ -18,6 +19,14 @@ export function MessageComposeForm({ locale, action }: MessageComposeFormProps) 
 
   const inputCls =
     "w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-ink placeholder:text-slate focus:border-pine focus:outline-none focus:ring-1 focus:ring-pine";
+
+  const toastFired = useRef(false);
+  useEffect(() => {
+    if (state.success && !toastFired.current) {
+      toastFired.current = true;
+      toast.success(locale === "zh" ? "消息草稿已创建！" : "Message draft created!");
+    }
+  }, [state.success, locale]);
 
   if (state.success) {
     return (
